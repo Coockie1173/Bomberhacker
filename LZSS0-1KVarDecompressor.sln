@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28010.2036
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LZSS0-1KVarDecompressor", "LZSS0-1KVarDecompressor\LZSS0-1KVarDecompressor.csproj", "{3BA89D40-7C96-4F21-8FCE-BFB6BF0DAD37}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3BA89D40-7C96-4F21-8FCE-BFB6BF0DAD37}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3BA89D40-7C96-4F21-8FCE-BFB6BF0DAD37}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3BA89D40-7C96-4F21-8FCE-BFB6BF0DAD37}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3BA89D40-7C96-4F21-8FCE-BFB6BF0DAD37}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7E4A3D4D-B3A9-4035-A4C3-54EC20CBA3DD}
+	EndGlobalSection
+EndGlobal
