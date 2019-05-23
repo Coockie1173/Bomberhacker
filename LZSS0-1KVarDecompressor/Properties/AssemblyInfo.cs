@@ -5,10 +5,10 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("LZSS0-1KVarDecompressor")]
+[assembly: AssemblyTitle("Bomberhacker")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Hewlett-Packard Company")]
+[assembly: AssemblyCompany("Coockie1173")]
 [assembly: AssemblyProduct("LZSS0-1KVarDecompressor")]
 [assembly: AssemblyCopyright("Copyright © Hewlett-Packard Company 2018")]
 [assembly: AssemblyTrademark("")]
