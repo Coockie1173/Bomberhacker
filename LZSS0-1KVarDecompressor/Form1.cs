@@ -46,6 +46,7 @@ namespace LZSS0_1KVarDecompressor
         String fileName;
         String directory;
 
+        //File Table Offsets
         UInt32[] TabOffsets = new UInt32[14]
             {
                 0x00120000, 0x00140000, 0x00160000,
@@ -158,6 +159,7 @@ namespace LZSS0_1KVarDecompressor
 
         private byte[] Compress01(byte[] Data)
         {
+            //level 0 compression, new compressor has been made but has not been implemented yet
             int CodeWordCount = (int)Math.Ceiling((float)(Data.Length / 8));
             int CompSize = (int)(Data.Length + CodeWordCount);
             byte[] CompBuf = new byte[CompSize + 1];
@@ -204,6 +206,7 @@ namespace LZSS0_1KVarDecompressor
 
         private void ImageInsert(Bitmap bm, N64Codec Codec, TextBox DataBox, TextBox PalBox)
         {
+            //converts image into something the N64 can read
             byte[] ImgData = null, paletteData = null;
 
             N64Graphics.Convert(ref ImgData, ref paletteData, Codec, bm);
@@ -264,6 +267,7 @@ namespace LZSS0_1KVarDecompressor
 
         private void button2_Click(object sender, EventArgs e)
         {
+            //inserts image into .bin file
             OpenFileDialog Open = new OpenFileDialog();
             DialogResult dialogResult = Open.ShowDialog();
             if (dialogResult == DialogResult.OK)
@@ -311,6 +315,7 @@ namespace LZSS0_1KVarDecompressor
 
         private void button2_Click_1(object sender, EventArgs e)
         {
+            //injection method A -- working properly
             int TableOffset = (int)GetTableOffset((int)TableIDValues.Value);
             int index = 0x10;
             long[] Offsets = new long[992];
@@ -341,6 +346,7 @@ namespace LZSS0_1KVarDecompressor
                 }
             }
 
+            //read all offsets from table
             for (int i = 0; i < 992; i++)
             {
                 
@@ -352,11 +358,14 @@ namespace LZSS0_1KVarDecompressor
                 index += 0x08;
             }
 
+            //find furthest offset
             long MaxOffset = Offsets.Max();
             int maxIndex = Offsets.ToList().IndexOf(MaxOffset);
 
+            //grab Compressed Size
             int CsizeMaxIndex = (int)Read4Bytes(ROM, (UInt32)((maxIndex * 0x08) + 0x10 + 0x4 + TableOffset));
 
+            //calculate index to write the new data at
             long WriteIndex = CsizeMaxIndex + MaxOffset + 0x2008 + TableOffset;
 
             byte[] CompressedBytes;
@@ -373,18 +382,21 @@ namespace LZSS0_1KVarDecompressor
             {
                 if (CompressedCheck.Checked)
                 {
+                    //if our file is precompressed we can grab the size for compressed, have to decompress for the decomp size
                     CompressedBytes = File.ReadAllBytes(open.FileName);
                     CompSize = CompressedBytes.Length;
                     UnCompSize = TrimEnd(Decode(CompressedBytes, (UInt32)CompressedBytes.Length, (UInt32)CompressedBytes.Length, 0)).Length;
                 }
                 else
                 {
+                    //have to compress first, then read the length from both the uncompressed and compressed file
                     UnCompressedBytes = File.ReadAllBytes(open.FileName);
                     CompressedBytes = Compress01(UnCompressedBytes);
                     CompSize = CompressedBytes.Length;
                     UnCompSize = UnCompressedBytes.Length;
                 }
 
+                //extend ROM if needed
                 if (TrimEnd(ROM).Length + CompressedBytes.Length + 0x4 > ROM.Length)
                 {
                     List<byte> ExROM = new List<byte>();
@@ -406,14 +418,17 @@ namespace LZSS0_1KVarDecompressor
                     j++;
                 }
 
+                //this was at the end of the file table so I'm keeping it there
                 Buffer = new byte[8]
                 {
                     0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x09, 0x00
                 };
 
+                //plop data into ROM
                 Array.Copy(CompressedBytes, 0, ROM, WriteIndex + 0x4, CompressedBytes.Length);
                 Array.Copy(Buffer, 0, ROM, WriteIndex + 0x4 + CompressedBytes.Length, 8);
                                 
+                //update the position (table 13)
                 WriteIndex = WriteIndex - 0x2008 - TableOffset - 0x4;
 
                 Buffer = BitConverter.GetBytes(WriteIndex);
@@ -425,6 +440,7 @@ namespace LZSS0_1KVarDecompressor
                 Array.Copy(Buffer, 4, ROM, (int)FileIDNumeric.Value * 0x8 + TableOffset + 0x10 + 0x4, 4);
 
 
+                //save the file
                 SaveFileDialog save = new SaveFileDialog();
                 save.Filter = "Z64 Rom|*.z64|Rom Files|*.rom";
                 DialogResult = save.ShowDialog();                
@@ -470,6 +486,7 @@ namespace LZSS0_1KVarDecompressor
 
         private void Form1_Load(object sender, EventArgs e)
         {
+            //messy code, have to fix
             string ExePath = System.Reflection.Assembly.GetEntryAssembly().Location;
             bool moved = false;
             File.WriteAllText(ExePath.Substring(0, ExePath.LastIndexOf("\\")) + "\\version.txt", ClientVersion.ToString());
