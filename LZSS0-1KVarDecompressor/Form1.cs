@@ -508,21 +508,7 @@ namespace LZSS0_1KVarDecompressor
             }
             else
             {
-                MessageBox.Show("Please select a ROM");
-                OpenFileDialog open = new OpenFileDialog();
-                DialogResult res = open.ShowDialog();
-                if (res == DialogResult.OK)
-                {
-                    File.WriteAllText("Config.cfg", open.FileName);
-                    Globals.ROM = File.ReadAllBytes(File.ReadLines("Config.cfg").First());
-                    Globals.ConfPath = System.Reflection.Assembly.GetEntryAssembly().Location + "\\Config.cfg";
-                    Globals.RomPath = File.ReadLines("Config.cfg").First();
-                    Globals.RomFolder = Globals.RomPath.Substring(0, Globals.RomPath.LastIndexOf("\\"));
-                }
-                else
-                {
-                    Environment.Exit(0);
-                }
+                OpenRom();
             }
             if (moved)
             {
@@ -531,11 +517,7 @@ namespace LZSS0_1KVarDecompressor
                 DialogResult res = open.ShowDialog();
                 if (res == DialogResult.OK)
                 {
-                    File.WriteAllText("Config.cfg", open.FileName);
-                    Globals.ROM = File.ReadAllBytes(File.ReadLines("Config.cfg").First());
-                    Globals.ConfPath = System.Reflection.Assembly.GetEntryAssembly().Location + "\\Config.cfg";
-                    Globals.RomPath = File.ReadLines("Config.cfg").First();
-                    Globals.RomFolder = Globals.RomPath.Substring(0, Globals.RomPath.LastIndexOf("\\"));
+                    OpenRom();
                 }
                 else
                 {
@@ -555,6 +537,26 @@ namespace LZSS0_1KVarDecompressor
             {
                 MessageBox.Show("NOT A BOMBERMAN ROM", "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 File.WriteAllText("Config.cfg", "");
+                Environment.Exit(0);
+            }
+        }
+
+        private void OpenRom()
+        {
+            //opens rom
+            MessageBox.Show("Please select a ROM");
+            OpenFileDialog open = new OpenFileDialog();
+            DialogResult res = open.ShowDialog();
+            if (res == DialogResult.OK)
+            {
+                File.WriteAllText("Config.cfg", open.FileName);
+                Globals.ROM = File.ReadAllBytes(File.ReadLines("Config.cfg").First());
+                Globals.ConfPath = System.Reflection.Assembly.GetEntryAssembly().Location + "\\Config.cfg";
+                Globals.RomPath = File.ReadLines("Config.cfg").First();
+                Globals.RomFolder = Globals.RomPath.Substring(0, Globals.RomPath.LastIndexOf("\\"));
+            }
+            else
+            {
                 Environment.Exit(0);
             }
         }

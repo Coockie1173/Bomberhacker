@@ -15,6 +15,8 @@ namespace LZSS0_1KVarDecompressor
 {
     public partial class ImageViewer : Form
     {
+        //this viewer isn't the best. It's recommended you use texture64.
+
         public ImageViewer()
         {
             InitializeComponent();

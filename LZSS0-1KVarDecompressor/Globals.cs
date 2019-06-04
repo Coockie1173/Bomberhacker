@@ -8,6 +8,7 @@ namespace LZSS0_1KVarDecompressor
 {
     class Globals
     {
+        //Shared data between all forms
         public static byte[] ROM;
         public static string ConfPath;
         public static string RomPath;

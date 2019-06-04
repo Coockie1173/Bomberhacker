@@ -12,6 +12,12 @@ using System.Windows.Forms;
 
 namespace LZSS0_1KVarDecompressor
 {
+
+    /*
+     * this code is NOT functional, nor will it function unless you do propper
+     * conversion of the display lists to something we can read 
+     */
+
     public partial class Viewer : Form
     {
         byte[] modelfile;

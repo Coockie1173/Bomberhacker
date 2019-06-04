@@ -351,7 +351,6 @@
             this.ViewerButton.TabIndex = 30;
             this.ViewerButton.Text = "Viewer";
             this.ViewerButton.UseVisualStyleBackColor = true;
-            this.ViewerButton.Visible = false;
             this.ViewerButton.Click += new System.EventHandler(this.ViewerButton_Click);
             // 
             // ViewImageButton
