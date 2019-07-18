@@ -271,6 +271,7 @@
     <Compile Include="About.Designer.cs">
       <DependentUpon>About.cs</DependentUpon>
     </Compile>
+    <Compile Include="Compression.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="FindSetup.cs">
       <SubType>Form</SubType>
@@ -386,6 +387,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="BomberHackIcon.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="References\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\Giawa.OpenGL.0.1.8\build\Giawa.OpenGL.targets" Condition="Exists('..\packages\Giawa.OpenGL.0.1.8\build\Giawa.OpenGL.targets')" />

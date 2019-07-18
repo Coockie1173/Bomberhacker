@@ -6,6 +6,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -17,6 +18,8 @@ namespace LZSS0_1KVarDecompressor
         {
             InitializeComponent();
         }
+
+        //multithreading support
 
         public static int N = 1024;
         public static int F = 16;
@@ -48,6 +51,125 @@ namespace LZSS0_1KVarDecompressor
 
         public static ftable_t[] tables = new ftable_t[TAmm];
 
+        private async void DecompBut_ClickAsync(object sender, EventArgs e)
+        {
+            byte[] ROM;
+            if (PathBox.Text != "")
+            {
+                ROM = File.ReadAllBytes(PathBox.Text);
+                RomBuffer = ROM;
+            }
+            else
+            {
+                return;
+            }
+
+            string FolderF = PathBox.Text.Substring(0, PathBox.Text.LastIndexOf("\\") + 1);
+            Directory.CreateDirectory(FolderF + "Compressed");
+            Directory.CreateDirectory(FolderF + "DeCompressed");
+
+            init_table_data();
+
+            List<Thread> ThreadList = new List<Thread>();
+
+            //seperate case for Table 13, as that one is the biggest
+            for (int i = 0; i < TAmm - 1; i++)
+            {
+                Thread th = null;
+                th = new Thread(() => parse_table(tables[i], (UInt32)i));
+                th.SetApartmentState(ApartmentState.STA);
+                th.IsBackground = true;
+                ThreadList.Add(th);
+                th.Start();                
+                Thread.Sleep(100);
+            }
+
+
+            //Table 13
+            int AmmFilesThirteen = 0;
+            UInt32 IndexFiles = 0x10;
+            UInt32 TabOffset = 0x00300000;
+            while(Read4Bytes(ROM, (UInt32)(TabOffset + IndexFiles)) != 0xFFFFFFFF)
+            {
+                IndexFiles += 0x8;
+                AmmFilesThirteen += 1;
+            }
+
+            int SplitAmm = 5;
+
+
+            while(AmmFilesThirteen % SplitAmm != 0)
+            {
+                SplitAmm++;
+            }
+
+            int AmmFilesToRead = AmmFilesThirteen / SplitAmm;
+
+
+            List<Task> tasks = new List<Task>();
+
+            for (int i = 0; i < SplitAmm; i++)
+            {
+                Thread th2 = null;
+                th2 = new Thread(() => RipFilesThirteen(AmmFilesToRead * i, AmmFilesToRead - 1, ROM));
+                th2.SetApartmentState(ApartmentState.STA);
+                th2.IsBackground = true;
+                th2.Start();
+                ThreadList.Add(th2);
+                Thread.Sleep(100);
+            }
+
+            MessageBox.Show("Files ripped succesfully.");
+        }
+
+        private void RipFilesThirteen(int Index, int Length, byte[] ROM)
+        {
+            //this is all the same logic as in the parse table, just hardcoded for table 13
+            UInt32 TabOffset = 0x00300000;
+            UInt32 Indexer = 0x10 + (UInt32)Index * 0x08;
+
+
+            for (int i = 0; i < Length; i++)
+            {
+                //so our thread doesn't stop
+                try
+                {
+                    //Math for data
+                    UInt32 CompSize = Read4Bytes(ROM, (UInt32)(TabOffset + Indexer + 0x4));
+                    UInt32 UnCompSize = Read4Bytes(ROM, Read4Bytes(ROM, (UInt32)(TabOffset + Indexer)) + 0x2008 + TabOffset);
+
+                    //makes a byte array
+                    byte[] DataB = new byte[sizeof(byte) + CompSize];
+                    Array.Copy(ROM, Read4Bytes(ROM, (UInt32)(TabOffset + Indexer)) + 0x4, DataB, 0, CompSize);
+                    for (UInt32 pos = 0; pos < CompSize; pos++)
+                    {
+                        //copies the data over
+                        DataB[pos] = RomBuffer[((TabOffset + 0x2008) + Indexer) + pos];
+                    }
+                    //decodes, starts at 0x4 since the first four bytes is the decompressed size
+                    byte[] DecompData = TrimEnd(Decode(DataB, CompSize, 307200, 0x4));
+
+                    string FileName = (PathBox.Text.Substring(0, PathBox.Text.LastIndexOf("\\") + 1) + "DeCompressed" + "\\" + "Table " + 13 + "_" + (i + Index).ToString().PadLeft(3, '0') + ".bin");
+
+                    FileStream file = new FileStream(FileName, FileMode.Create, FileAccess.Write);
+                    file.Write(DecompData, 0, DecompData.Length);
+                    file.Close();
+
+                    FileName = (PathBox.Text.Substring(0, PathBox.Text.LastIndexOf("\\") + 1) + "Compressed" + "\\" + "Table " + 13 + "_" + (i + Index).ToString().PadLeft(3, '0') + ".bin");
+
+                    file = new FileStream(FileName, FileMode.Create, FileAccess.Write);
+                    file.Write(DataB, 0, DataB.Length);
+                    file.Close();                    
+                }
+                catch
+                {
+                    
+                }
+
+                Indexer += 0x08;
+            }
+        }
+
         public UInt32 Read4Bytes(byte[] buf, UInt32 index)
         {
             return ((uint)(buf[index + 0] << 24 | buf[index + 1] << 16 | buf[index + 2] << 8 | buf[index + 3]));
@@ -61,7 +183,7 @@ namespace LZSS0_1KVarDecompressor
                 tab.Table_Entry_Count = 1000;
             }
             int temp = tab.Table_Entry_Count;
-            tab.Table_Index = 0x10;
+            UInt32 Table_Index = 0x10;
             for (int i = 0; i <= tab.Table_Entry_Count; i++)
             {
                 //if (num == 0xD && i == 47)
@@ -69,24 +191,24 @@ namespace LZSS0_1KVarDecompressor
                 //    break;
                 //}
 
-                tab.Table_Offset = Read4Bytes(RomBuffer, tab.Table_Entry + tab.Table_Index);
+                tab.Table_Offset = Read4Bytes(RomBuffer, tab.Table_Entry + Table_Index);
                 if (tab.Table_Offset == 0xFFFFFFFF)
                 {
-                    DebugBox.Text += "Error trying to read another entry " + tab.Table_Offset.ToString() + Environment.NewLine;
+                    //DebugBox.Text += "Error trying to read another entry " + tab.Table_Offset.ToString() + Environment.NewLine;
                     break;
                 }
 
-                tab.Fentry_Csize = Read4Bytes(RomBuffer, (tab.Table_Entry + tab.Table_Index) + 0x4);
+                tab.Fentry_Csize = Read4Bytes(RomBuffer, (tab.Table_Entry + Table_Index) + 0x4);
 
                 if (i == 35)
                 {
-                    DebugBox.Text += "Huge Entry + " + num + "_" + i + Environment.NewLine;
+                    //DebugBox.Text += "Huge Entry + " + num + "_" + i + Environment.NewLine;
                 }
 
                 if (tab.Fentry_Csize > 0x00010000 && i != 34)
                 {
-                    DebugBox.Text += "Next entry is huge. Uncompressed file, moving along..." + Environment.NewLine;
-                    DebugBox.Text += "Huge Entry + " + num + "_" + i + Environment.NewLine;
+                    //DebugBox.Text += "Next entry is huge. Uncompressed file, moving along..." + Environment.NewLine;
+                    //DebugBox.Text += "Huge Entry + " + num + "_" + i + Environment.NewLine;
                     /*if (tab.Fentry_Csize < 2147483648)
                     {
                         
@@ -127,12 +249,11 @@ namespace LZSS0_1KVarDecompressor
                 }
                 else
                 {
-                    //this line is the broken line.
+
                     tab.Fentry_Ucsize = Read4Bytes(RomBuffer, (tab.Table_Entry + tab.Offset_Start_Data) + tab.Table_Offset);
                     //unsafe, not sure if correct
                     tab.fentry_data = new byte[sizeof(byte) + tab.Fentry_Csize];
-                    Array.Copy(RomBuffer, tab.Table_Index, tab.fentry_data, 0, tab.Fentry_Csize);
-                    File.WriteAllBytes(PathBox.Text.Substring(0, PathBox.Text.LastIndexOf("\\") + 1) + "Compressed" + "\\" + "Table " + num + "_" + i + ".bin", tab.fentry_data);
+                    Array.Copy(RomBuffer, Table_Index, tab.fentry_data, 0, tab.Fentry_Csize);
                     for (UInt32 pos = 0; pos < tab.Fentry_Csize; pos++)
                     {
                         tab.fentry_data[pos] = RomBuffer[((tab.Table_Entry + tab.Offset_Start_Data) + tab.Table_Offset) + pos];
@@ -163,7 +284,8 @@ namespace LZSS0_1KVarDecompressor
                         DecompOut = DecompOut.ToList().GetRange(0, (int)tab.Fentry_Ucsize).ToArray();
                     }
                     */
-
+                    
+                    //this can be done in an easier fashion
                     string tempo = i.ToString();
 
                     if (tempo.Length == 1)
@@ -175,15 +297,30 @@ namespace LZSS0_1KVarDecompressor
                         tempo = "0" + tempo;
                     }
 
-                    File.WriteAllBytes(PathBox.Text.Substring(0, PathBox.Text.LastIndexOf("\\") + 1) + "DeCompressed" + "\\" + "Table " + num + "_" + tempo + ".bin", DecompOut);
+                    //File.WriteAllBytes(PathBox.Text.Substring(0, PathBox.Text.LastIndexOf("\\") + 1) + "DeCompressed" + "\\" + "Table " + num + "_" + tempo + ".bin", DecompOut);
+                    //File.WriteAllBytes(PathBox.Text.Substring(0, PathBox.Text.LastIndexOf("\\") + 1) + "Compressed" + "\\" + "Table " + num + "_" + i + ".bin", tab.fentry_data);
+
+                    string FileName = (PathBox.Text.Substring(0, PathBox.Text.LastIndexOf("\\") + 1) + "DeCompressed" + "\\" + "Table " + num + "_" + tempo + ".bin");
+
+                    FileStream file = new FileStream(FileName, FileMode.Create, FileAccess.Write);
+                    file.Write(DecompOut, 0, DecompOut.Length);
+                    file.Close();
+
+                    FileName = (PathBox.Text.Substring(0, PathBox.Text.LastIndexOf("\\") + 1) + "Compressed" + "\\" + "Table " + num + "_" + i + ".bin");
+
+                    file = new FileStream(FileName, FileMode.Create, FileAccess.Write);
+                    file.Write(tab.fentry_data, 0, tab.fentry_data.Length);
+                    file.Close();                    
 
                     //debug stuff
                     string newline = Environment.NewLine;
-                    DebugBox.Text += string.Format("[TABLE {0} {1}]{2}Table Offset {3}{2}Compressed size {4}{2}" +
-                        "Decompressed size {5}{2}Table Index {6} {2}Entry Count {7}{2}{8}{2}{2}", num, tab.Table_Entry, newline, tab.Table_Offset, tab.Fentry_Csize, tab.Fentry_Ucsize, i, tab.Table_Entry_Count, tab.Table_Index);
+                    //DebugBox.Text += string.Format("[TABLE {0} {1}]{2}Table Offset {3}{2}Compressed size {4}{2}" +
+                    //   "Decompressed size {5}{2}Table Index {6} {2}Entry Count {7}{2}{8}{2}{2}", num, tab.Table_Entry, newline, tab.Table_Offset, tab.Fentry_Csize, tab.Fentry_Ucsize, i, tab.Table_Entry_Count, Table_Index);
                 }
-                tab.Table_Index += 0x08;
+                Table_Index += 0x08;
             }
+
+            Thread.EndThreadAffinity();
         }
 
         public void init_table_data()
@@ -401,30 +538,38 @@ namespace LZSS0_1KVarDecompressor
             return array;
         }
 
-        private void DecompBut_Click(object sender, EventArgs e)
+        private void Ripper_Load(object sender, EventArgs e)
         {
+            PathBox.Text = Globals.RomPath;
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            UInt32 Offset = 0x120000;
+            int AmmFiles = 4;
+
             byte[] ROM;
-            if (PathBox.Text != "")
-            {
-                ROM = File.ReadAllBytes(PathBox.Text);
-                RomBuffer = ROM;
-            }
+
+            ROM = File.ReadAllBytes(PathBox.Text);
+            RomBuffer = ROM;
 
             string FolderF = PathBox.Text.Substring(0, PathBox.Text.LastIndexOf("\\") + 1);
             Directory.CreateDirectory(FolderF + "Compressed");
             Directory.CreateDirectory(FolderF + "DeCompressed");
 
-            init_table_data();
+            int Index = 0x10;
 
-            for (int i = 0; i < TAmm; i++)
+            for (int i = 0; i < AmmFiles; i++)
             {
-                parse_table(tables[i], (UInt32)i);
-            }
-        }
+                UInt32 CompSize = (UInt32)Offset + (UInt32)Index + 0x4;
+                UInt32 UnCompLength = Read4Bytes(ROM, 0x2008 + Offset + (UInt32)Read4Bytes(ROM, (UInt32)Index + Offset));
+                List<byte> Dat = new List<byte>();
+                byte[] buf = new byte[CompSize];
+                Array.Copy(ROM, (UInt32)Read4Bytes(ROM, (UInt32)Offset + (UInt32)Index) + Offset + 0x2008, buf, 0, UnCompLength);
 
-        private void Ripper_Load(object sender, EventArgs e)
-        {
-            PathBox.Text = Globals.RomPath;
+                Dat.AddRange(buf);
+                Decode(Dat.ToArray(), CompSize, CompSize * 2, 0);
+            }
         }
     }
 }

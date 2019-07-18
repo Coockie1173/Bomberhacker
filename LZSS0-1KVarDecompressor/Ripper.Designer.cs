@@ -29,19 +29,11 @@
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Ripper));
-            this.DebugBox = new System.Windows.Forms.TextBox();
             this.PathBox = new System.Windows.Forms.TextBox();
             this.DecompBut = new System.Windows.Forms.Button();
+            this.button1 = new System.Windows.Forms.Button();
+            this.progressBar1 = new System.Windows.Forms.ProgressBar();
             this.SuspendLayout();
-            // 
-            // DebugBox
-            // 
-            this.DebugBox.Location = new System.Drawing.Point(175, 41);
-            this.DebugBox.Multiline = true;
-            this.DebugBox.Name = "DebugBox";
-            this.DebugBox.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.DebugBox.Size = new System.Drawing.Size(262, 274);
-            this.DebugBox.TabIndex = 7;
             // 
             // PathBox
             // 
@@ -60,14 +52,32 @@
             this.DecompBut.TabIndex = 4;
             this.DecompBut.Text = "Decompress";
             this.DecompBut.UseVisualStyleBackColor = true;
-            this.DecompBut.Click += new System.EventHandler(this.DecompBut_Click);
+            this.DecompBut.Click += new System.EventHandler(this.DecompBut_ClickAsync);
+            // 
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(12, 41);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(157, 23);
+            this.button1.TabIndex = 8;
+            this.button1.Text = "ReRip Table 01";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
+            // 
+            // progressBar1
+            // 
+            this.progressBar1.Location = new System.Drawing.Point(12, 89);
+            this.progressBar1.Name = "progressBar1";
+            this.progressBar1.Size = new System.Drawing.Size(425, 23);
+            this.progressBar1.TabIndex = 9;
             // 
             // Ripper
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(451, 327);
-            this.Controls.Add(this.DebugBox);
+            this.ClientSize = new System.Drawing.Size(451, 121);
+            this.Controls.Add(this.progressBar1);
+            this.Controls.Add(this.button1);
             this.Controls.Add(this.PathBox);
             this.Controls.Add(this.DecompBut);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
@@ -81,9 +91,9 @@
         }
 
         #endregion
-
-        private System.Windows.Forms.TextBox DebugBox;
         private System.Windows.Forms.TextBox PathBox;
         private System.Windows.Forms.Button DecompBut;
+        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.ProgressBar progressBar1;
     }
 }

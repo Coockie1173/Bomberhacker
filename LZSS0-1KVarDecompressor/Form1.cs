@@ -46,6 +46,8 @@ namespace LZSS0_1KVarDecompressor
         String fileName;
         String directory;
 
+        public Compression Compressor = new Compression();
+
         //File Table Offsets
         UInt32[] TabOffsets = new UInt32[14]
             {
@@ -80,115 +82,14 @@ namespace LZSS0_1KVarDecompressor
         }
 
         
-        public byte[] Decode(byte[] data, UInt32 ComSize, UInt32 OutSize, UInt32 Pos)
-        {
-            byte[] OutPut = new byte[OutSize];
-            byte[] fbuffer = new byte[N + F - 1];
-
-            UInt32 flag;
-            UInt32 buf_1;
-            UInt32 inpos;
-            UInt32 outpos;
-
-            UInt64 val;
-            UInt64 size;
-            UInt64 back;
-
-            buf_1 = 0;
-            flag = 0;
-            inpos = Pos;
-            val = 0;
-            size = 0;
-            outpos = 0;
-            back = 0;
 
 
-            for (UInt32 i = 0; i < 0x400; i++) //1KB buffer
-            {
-                fbuffer[i] = 0x00;
-            }
-            buf_1 = 0x3BE;
 
-            while (inpos <= ComSize - 1)
-            {
-                flag >>= 1;
-                if (flag < 2)
-                {
-                    flag = (Convert.ToUInt32(data[inpos++]) & 0xFF) | 0x100;
-                    if (flag < 0)
-                    {
-                        break;
-                    }
-                }
-                if ((flag & 1) != 0)
-                {
-                    val = Convert.ToUInt64(data[inpos++]) & 0xFF;
-                    if (val < 0)
-                    {
-                        break;
-                    }
-                    OutPut[outpos++] = Convert.ToByte(val);
-                    fbuffer[buf_1] = Convert.ToByte(val);
-                    buf_1 += 1;
-                    buf_1 &= 0x3FF;
-                }
-                else if (inpos <= ComSize - 1)
-                {
-                    back = data[inpos++];
-                    size = data[inpos++];
-
-                    back |= ((size << 2) & 0x300);
-                    size &= 0x3F;
-
-                    for (UInt64 i = 0; i < size + 0x3; i++)
-                    {
-                        val = fbuffer[back];
-                        OutPut[outpos++] = Convert.ToByte(val);
-                        fbuffer[buf_1] = Convert.ToByte(val);
-
-                        back += 1;
-                        back &= 0x3FF;
-
-                        buf_1 += 1;
-                        buf_1 &= 0x3FF;
-                    }
-                }
-            }
-            return OutPut;
-        }
-
-        private byte[] Compress01(byte[] Data)
-        {
-            //level 0 compression, new compressor has been made but has not been implemented yet
-            int CodeWordCount = (int)Math.Ceiling((float)(Data.Length / 8));
-            int CompSize = (int)(Data.Length + CodeWordCount);
-            byte[] CompBuf = new byte[CompSize + 1];
-            byte[] dst = CompBuf;
-
-            int DestPlace = 0;
-            int SrcPlace = 0;
-
-            while (DestPlace < CompSize)
-            {
-                if (DestPlace == 0 || DestPlace % 9 == 0)
-                {
-                    dst[DestPlace] = 0xFF;
-                }
-                else
-                {
-                    dst[DestPlace] = Data[SrcPlace];
-                    SrcPlace++;
-                }
-                DestPlace++;
-            }           
-
-            return dst;
-        }
 
         private void DecompressBut_Click(object sender, EventArgs e)
         {
             byte[] data = File.ReadAllBytes(FilePathBox.Text);
-            byte[] outData = Decode(data, (uint)data.Length, (uint)data.Length * 3, 0);
+            byte[] outData = Compression.Decompress(data, (uint)data.Length, (uint)data.Length * 10, 0);
             byte[] trimmedData = TrimEnd(outData);
             SaveFileDialog save = new SaveFileDialog();
             save.ShowDialog();
@@ -225,7 +126,7 @@ namespace LZSS0_1KVarDecompressor
         private void CompButton_Click(object sender, EventArgs e)
         {
             byte[] data = File.ReadAllBytes(FilePathBox.Text);
-            byte[] outData = Compress01(data);
+            byte[] outData = Compression.CompressInflate(data);
             SaveFileDialog save = new SaveFileDialog();
             save.ShowDialog();
             File.WriteAllBytes(save.FileName, outData);
@@ -385,13 +286,13 @@ namespace LZSS0_1KVarDecompressor
                     //if our file is precompressed we can grab the size for compressed, have to decompress for the decomp size
                     CompressedBytes = File.ReadAllBytes(open.FileName);
                     CompSize = CompressedBytes.Length;
-                    UnCompSize = TrimEnd(Decode(CompressedBytes, (UInt32)CompressedBytes.Length, (UInt32)CompressedBytes.Length, 0)).Length;
+                    UnCompSize = TrimEnd(Compression.Decompress(CompressedBytes, (UInt32)CompressedBytes.Length, (UInt32)CompressedBytes.Length, 0)).Length;
                 }
                 else
                 {
                     //have to compress first, then read the length from both the uncompressed and compressed file
                     UnCompressedBytes = File.ReadAllBytes(open.FileName);
-                    CompressedBytes = Compress01(UnCompressedBytes);
+                    CompressedBytes = Compression.CompressInflate(UnCompressedBytes);
                     CompSize = CompressedBytes.Length;
                     UnCompSize = UnCompressedBytes.Length;
                 }
@@ -639,12 +540,12 @@ namespace LZSS0_1KVarDecompressor
                 {
                     CompressedBytes = File.ReadAllBytes(open.FileName);
                     CSize = CompressedBytes.Length;
-                    UCSize = TrimEnd(Decode(CompressedBytes, (UInt32)CompressedBytes.Length, (UInt32)CompressedBytes.Length, 0)).Length;
+                    UCSize = TrimEnd(Compression.Decompress(CompressedBytes, (UInt32)CompressedBytes.Length, (UInt32)CompressedBytes.Length, 0)).Length;
                 }
                 else
                 {
                     UnCompressedBytes = File.ReadAllBytes(open.FileName);
-                    CompressedBytes = Compress01(UnCompressedBytes);
+                    CompressedBytes = Compression.CompressInflate(UnCompressedBytes);
                     CSize = CompressedBytes.Length;
                     UCSize = UnCompressedBytes.Length;
                 }
