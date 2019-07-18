@@ -15,7 +15,10 @@ namespace LZSS0_1KVarDecompressor
 
     /*
      * this code is NOT functional, nor will it function unless you do propper
-     * conversion of the display lists to something we can read 
+     * conversion of the display lists to something we can read
+     * 
+     * I correct my statement:
+     *      You'll have to figure out the 04XXXXXXXXXXXXXX command
      */
 
     public partial class Viewer : Form

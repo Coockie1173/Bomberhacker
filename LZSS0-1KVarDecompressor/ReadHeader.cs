@@ -13,6 +13,8 @@ namespace LZSS0_1KVarDecompressor
 {
     public partial class ReadHeader : Form
     {
+        //this can be useful for some files, not all though
+
         string FilePath = "";
         string[] Files;        
 

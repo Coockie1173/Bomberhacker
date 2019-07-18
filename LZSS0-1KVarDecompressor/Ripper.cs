@@ -137,6 +137,7 @@ namespace LZSS0_1KVarDecompressor
                     //Math for data
                     UInt32 CompSize = Read4Bytes(ROM, (UInt32)(TabOffset + Indexer + 0x4));
                     UInt32 UnCompSize = Read4Bytes(ROM, Read4Bytes(ROM, (UInt32)(TabOffset + Indexer)) + 0x2008 + TabOffset);
+                    UInt32 Offset = Read4Bytes(ROM, (UInt32)(TabOffset + Indexer));
 
                     //makes a byte array
                     byte[] DataB = new byte[sizeof(byte) + CompSize];
@@ -144,7 +145,7 @@ namespace LZSS0_1KVarDecompressor
                     for (UInt32 pos = 0; pos < CompSize; pos++)
                     {
                         //copies the data over
-                        DataB[pos] = RomBuffer[((TabOffset + 0x2008) + Indexer) + pos];
+                        DataB[pos] = RomBuffer[((TabOffset + 0x2008) + Offset) + pos];
                     }
                     //decodes, starts at 0x4 since the first four bytes is the decompressed size
                     byte[] DecompData = TrimEnd(Decode(DataB, CompSize, 307200, 0x4));
@@ -545,6 +546,10 @@ namespace LZSS0_1KVarDecompressor
 
         private void button1_Click(object sender, EventArgs e)
         {
+            //this table doesn't rip properly for some reason
+            //will fix this along with the cleanup soon
+
+
             UInt32 Offset = 0x120000;
             int AmmFiles = 4;
 
