@@ -1,3 +1,5 @@
+//this might be useful for later. Not sure though :/
+
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 
