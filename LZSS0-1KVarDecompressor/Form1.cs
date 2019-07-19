@@ -79,12 +79,7 @@ namespace LZSS0_1KVarDecompressor
             OpenFileDialog open = new OpenFileDialog();
             open.ShowDialog();
             FilePathBox.Text = open.FileName;
-        }
-
-        
-
-
-
+        }    
 
         private void DecompressBut_Click(object sender, EventArgs e)
         {
@@ -350,10 +345,6 @@ namespace LZSS0_1KVarDecompressor
                     File.WriteAllBytes(save.FileName, ROM);
                 }
             }
-
-
-
-
         }
 
         private void AboutButton_Click(object sender, EventArgs e)

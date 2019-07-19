@@ -73,7 +73,7 @@ namespace LZSS0_1KVarDecompressor
             List<Thread> ThreadList = new List<Thread>();
 
             //seperate case for Table 13, as that one is the biggest
-            for (int i = 0; i < TAmm - 1; i++)
+            for (int i = 0; i < TAmm; i++)
             {
                 Thread th = null;
                 th = new Thread(() => parse_table(tables[i], (UInt32)i));
@@ -86,7 +86,7 @@ namespace LZSS0_1KVarDecompressor
 
 
             //Table 13
-            int AmmFilesThirteen = 0;
+            /*int AmmFilesThirteen = 0;
             UInt32 IndexFiles = 0x10;
             UInt32 TabOffset = 0x00300000;
             while(Read4Bytes(ROM, (UInt32)(TabOffset + IndexFiles)) != 0xFFFFFFFF)
@@ -95,10 +95,10 @@ namespace LZSS0_1KVarDecompressor
                 AmmFilesThirteen += 1;
             }
 
-            int SplitAmm = 5;
+            int SplitAmm = 5;*/
 
 
-            while(AmmFilesThirteen % SplitAmm != 0)
+            /*while(AmmFilesThirteen % SplitAmm != 0)
             {
                 SplitAmm++;
             }
@@ -106,9 +106,9 @@ namespace LZSS0_1KVarDecompressor
             int AmmFilesToRead = AmmFilesThirteen / SplitAmm;
 
 
-            List<Task> tasks = new List<Task>();
+            List<Task> tasks = new List<Task>();*/
 
-            for (int i = 0; i < SplitAmm; i++)
+            /*for (int i = 0; i < SplitAmm; i++)
             {
                 Thread th2 = null;
                 th2 = new Thread(() => RipFilesThirteen(AmmFilesToRead * i, AmmFilesToRead - 1, ROM));
@@ -117,7 +117,7 @@ namespace LZSS0_1KVarDecompressor
                 th2.Start();
                 ThreadList.Add(th2);
                 Thread.Sleep(100);
-            }
+            }*/
 
             MessageBox.Show("Files ripped succesfully.");
         }
