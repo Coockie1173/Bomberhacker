@@ -211,11 +211,25 @@ namespace LZSS0_1KVarDecompressor
 
         private void button2_Click_1(object sender, EventArgs e)
         {
-            //injection method A -- working properly
-            int TableOffset = (int)GetTableOffset((int)TableIDValues.Value);
-            int index = 0x10;
+            InjectA();
+        }
+
+        private void InjectC()
+        {
+            //propper injection attempt, not just lazily adding it to end of ROM
+            //WIP
+
+            UInt32 TableOffset = (UInt32)GetTableOffset((int)TableIDValues.Value);
+            int Index = 0x10;
             long[] Offsets = new long[992];
             byte[] ROM = Globals.ROM;
+            UInt32 ShiftAmm = 0;
+            UInt32 ShiftIndex = 0;
+            ShiftIndex = (UInt32)FileIDNumeric.Value * 0x8 + 0x10;
+
+            UInt32 OriginalSize = Read4Bytes(ROM, ShiftIndex + 0x4);
+
+
 
             DialogResult res = MessageBox.Show("Use custom ROM?", "Custom", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
 
@@ -224,7 +238,7 @@ namespace LZSS0_1KVarDecompressor
                 OpenFileDialog openFile = new OpenFileDialog();
                 openFile.Filter = "Z64 Rom|*.z64|Rom Files|*.rom";
                 res = openFile.ShowDialog();
-                
+
                 if (res == DialogResult.OK)
                 {
                     ROM = File.ReadAllBytes(openFile.FileName);
@@ -242,10 +256,48 @@ namespace LZSS0_1KVarDecompressor
                 }
             }
 
+
+        }
+
+        private void InjectA()
+        {
+            //injection method A -- working properly
+            int TableOffset = (int)GetTableOffset((int)TableIDValues.Value);
+            int index = 0x10;
+            long[] Offsets = new long[992];
+            byte[] ROM = Globals.ROM;
+
+            DialogResult res = MessageBox.Show("Use custom ROM?", "Custom", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+
+            if (res == DialogResult.Yes)
+            {
+                OpenFileDialog openFile = new OpenFileDialog();
+                openFile.Filter = "Z64 Rom|*.z64|Rom Files|*.rom";
+                res = openFile.ShowDialog();
+
+                if (res == DialogResult.OK)
+                {
+                    ROM = File.ReadAllBytes(openFile.FileName);
+                    byte[] Check = new byte[0xC];
+                    for (int i = 0; i < 0xC; i++)
+                    {
+                        Check[i] = ROM[0x20 + i];
+                    }
+                    string Checker = System.Text.Encoding.UTF8.GetString(Check);
+                    if (Checker != "BOMBERMAN64U")
+                    {
+                        MessageBox.Show("ERROR! NOT A BOMBERMAN ROM! USING NORMAL ROM.", "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        ROM = Globals.ROM;
+                    }
+                }
+
+
+            }
+
             //read all offsets from table
             for (int i = 0; i < 992; i++)
             {
-                
+
                 Offsets[i] = Read4Bytes(ROM, (UInt32)(TableOffset + index));
                 if (Offsets[i] == 4294967295)
                 {
@@ -309,7 +361,7 @@ namespace LZSS0_1KVarDecompressor
 
                 int j = 0;
                 for (int i = 3; i >= 0; i--)
-                {                    
+                {
                     ROM[WriteIndex + j] = Buffer[i];
                     j++;
                 }
@@ -323,12 +375,12 @@ namespace LZSS0_1KVarDecompressor
                 //plop data into ROM
                 Array.Copy(CompressedBytes, 0, ROM, WriteIndex + 0x4, CompressedBytes.Length);
                 Array.Copy(Buffer, 0, ROM, WriteIndex + 0x4 + CompressedBytes.Length, 8);
-                                
+
                 //update the position (table 13)
                 WriteIndex = WriteIndex - 0x2008 - TableOffset - 0x4;
 
                 Buffer = BitConverter.GetBytes(WriteIndex);
-                Array.Reverse(Buffer);              Buffer[7] += 0x4;
+                Array.Reverse(Buffer); Buffer[7] += 0x4;
                 Array.Copy(Buffer, 4, ROM, (int)FileIDNumeric.Value * 0x8 + TableOffset + 0x10, 4);
 
                 Buffer = BitConverter.GetBytes(CompSize);
@@ -339,7 +391,7 @@ namespace LZSS0_1KVarDecompressor
                 //save the file
                 SaveFileDialog save = new SaveFileDialog();
                 save.Filter = "Z64 Rom|*.z64|Rom Files|*.rom";
-                DialogResult = save.ShowDialog();                
+                DialogResult = save.ShowDialog();
                 if (DialogResult == DialogResult.OK)
                 {
                     File.WriteAllBytes(save.FileName, ROM);
