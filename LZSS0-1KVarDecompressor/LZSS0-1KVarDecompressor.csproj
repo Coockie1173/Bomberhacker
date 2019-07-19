@@ -387,6 +387,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="BomberHackIcon.ico" />
+    <Content Include="CRC\rn64crc.exe">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="TODO.txt" />
   </ItemGroup>
   <ItemGroup>

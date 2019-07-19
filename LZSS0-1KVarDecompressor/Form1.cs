@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -211,7 +212,7 @@ namespace LZSS0_1KVarDecompressor
 
         private void button2_Click_1(object sender, EventArgs e)
         {
-            InjectA();
+            InjectC();
         }
 
         private void InjectC()
@@ -219,7 +220,7 @@ namespace LZSS0_1KVarDecompressor
             //propper injection attempt, not just lazily adding it to end of ROM
             //WIP
 
-            UInt32 TableOffset = (UInt32)GetTableOffset((int)TableIDValues.Value);
+            UInt32 TableOffset = (UInt32)TabOffsets[(int)TableIDValues.Value];
             int Index = 0x10;
             long[] Offsets = new long[992];
             byte[] ROM = Globals.ROM;
@@ -227,7 +228,7 @@ namespace LZSS0_1KVarDecompressor
             UInt32 ShiftIndex = 0;
             ShiftIndex = (UInt32)FileIDNumeric.Value * 0x8 + 0x10;
 
-            UInt32 OriginalSize = Read4Bytes(ROM, ShiftIndex + 0x4);
+            UInt32 OriginalSize = Read4Bytes(ROM, TableOffset + ShiftIndex + 0x4);
 
 
 
@@ -256,7 +257,99 @@ namespace LZSS0_1KVarDecompressor
                 }
             }
 
+            byte[] CompressedBytes = null;
+            byte[] UnCompressedBytes = null;
 
+            long CompSize = 0;
+            long UnCompSize = 0;
+
+            OpenFileDialog open = new OpenFileDialog();
+            open.Filter = "Bin File|*.bin";
+            DialogResult dialog;
+            dialog = open.ShowDialog();
+            if (dialog == DialogResult.OK)
+            {
+                if (CompressedCheck.Checked)
+                {
+                    //if our file is precompressed we can grab the size for compressed, have to decompress for the decomp size
+                    CompressedBytes = File.ReadAllBytes(open.FileName);
+                    CompSize = CompressedBytes.Length;
+                    UnCompSize = TrimEnd(Compression.Decompress(CompressedBytes, (UInt32)CompressedBytes.Length, (UInt32)CompressedBytes.Length, 0)).Length;
+                }
+                else
+                {
+                    //have to compress first, then read the length from both the uncompressed and compressed file
+                    UnCompressedBytes = File.ReadAllBytes(open.FileName);
+                    CompressedBytes = Compression.CompressInflate(UnCompressedBytes);
+                    CompSize = CompressedBytes.Length;
+                    UnCompSize = UnCompressedBytes.Length;
+                }
+            }
+
+            if (OriginalSize > CompressedBytes.Length - 1)
+            {
+                byte[] CompSizeByte = BitConverter.GetBytes((int)CompSize);
+                byte[] Buf = new byte[4];
+
+                List<byte> ROMlst = new List<byte>();
+                ROMlst = ROM.ToList();
+
+                //flip endian
+                for(int i = 0; i < 4; i++)
+                {
+                    Buf[i] = CompSizeByte[3 - i];
+                }
+
+                //change compressed size
+                ROMlst.RemoveRange((int)TableOffset + (int)ShiftIndex + 0x4, 0x4);
+                ROMlst.InsertRange((int)TableOffset + (int)ShiftIndex + 0x4, Buf);
+
+                byte[] UnCompSizeByte = BitConverter.GetBytes((int)UnCompSize);
+                for (int i = 0; i < 4; i++)
+                {
+                    Buf[i] = UnCompSizeByte[3 - i];
+                }
+
+                //change uncompressed size
+                ROMlst.RemoveRange((int)Read4Bytes(ROM, TableOffset + ShiftIndex), (int)CompSize + 0x4);
+                ROMlst.InsertRange((int)Read4Bytes(ROM, TableOffset + ShiftIndex), Buf);
+
+                //add "compressed" data
+                ROMlst.InsertRange((int)Read4Bytes(ROM, TableOffset + ShiftIndex) + 0x4, CompressedBytes);
+
+                ROM = ROMlst.ToArray();
+            }
+            else
+            {
+
+            }
+
+            //check if rom needs extending
+            if (ROM.Length % (4 * 0x100000) != 0)
+            {
+                List<byte> RomLst = new List<byte>();
+                RomLst = ROM.ToList();
+                while (RomLst.Count % (4 * 0x100000) != 0)
+                {
+                    RomLst.Add(0x00);
+                }
+
+                ROM = RomLst.ToArray();
+            }
+
+            //save ROM
+            SaveFileDialog save = new SaveFileDialog();
+            save.Filter = "Z64 Rom|*.z64|Rom Files|*.rom";
+            DialogResult = save.ShowDialog();
+            if (DialogResult == DialogResult.OK)
+            {
+                File.WriteAllBytes(save.FileName, ROM);
+
+                Process myProcess = new Process();
+                myProcess.StartInfo.FileName = @"CRC\rn64crc.exe";
+                myProcess.StartInfo.Arguments = $"-u {save.FileName}";
+                myProcess.Start();
+            }
         }
 
         private void InjectA()
@@ -290,8 +383,6 @@ namespace LZSS0_1KVarDecompressor
                         ROM = Globals.ROM;
                     }
                 }
-
-
             }
 
             //read all offsets from table
@@ -395,6 +486,11 @@ namespace LZSS0_1KVarDecompressor
                 if (DialogResult == DialogResult.OK)
                 {
                     File.WriteAllBytes(save.FileName, ROM);
+
+                    Process myProcess = new Process();
+                    myProcess.StartInfo.FileName = @"CRC\rn64crc.exe";
+                    myProcess.StartInfo.Arguments = $"-u {save.FileName}";
+                    myProcess.Start();
                 }
             }
         }
