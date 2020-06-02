@@ -1,7 +1,3 @@
 ﻿Todo list:
 
-Write a better importer -- part of cleanup
-Figure out how the 04 command works in DL's
-Make a model viewer
-Make a setup editor (if possible)
-Cleanup code
+See Bomberhacker 2.0
